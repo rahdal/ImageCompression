@@ -4,20 +4,41 @@
 #include <iostream>
 
 
-typedef struct {
-    unsigned char r, g, b;
-} pixel;
+struct pixel{
+    uint64_t r;
+    uint64_t g;
+    uint64_t b;
+};
 
 
 class Image{
-    private:
+    public:
         std::string filename;
-        std::vector<std::vector<std::vector<int>>> rawimage;
+        std::vector<std::vector<pixel>> rawimage;
         std::vector<std::vector<std::vector<int>>> bwimage;
 
-        void ImageToPPM(std::string filename);
+        void ImageToPPM(std::string filename){
+            FILE *f;
+            f = fopen("write.ppm", "w");
+
+            fprintf(f, "P3\n");
+            
+            size_t width = rawimage[0].size();
+            size_t height = rawimage.size();
+
+            fprintf(f,"%s %s %s" ,std::to_string(width).c_str(), std::to_string(height).c_str(), "\n");
+
+            for(size_t i = 0; i < height; i++){
+                for(size_t j = 0; j < width; j++){
+                    fprintf(f, "%ld %ld %ld %s", rawimage[i][j].r, rawimage[i][j].g, rawimage[i][j].b, " ");
+                }
+                fprintf(f, "\n");
+
+            }
+        }
 
         void PPMToArray(std::string filename){
+            
             FILE *f;
             f = fopen(filename.c_str(), "r");
 
@@ -25,32 +46,27 @@ class Image{
             int width, height, Maxval;
 
             fscanf(f, "%s %d %d %d", magic_number, &width, &height, &Maxval);
-            printf("magic_n = %s, width = %d, height = %d, max_colour = %d\n", magic_number, width, height, Maxval);
+            printf("magic_number = %s, width = %d, height = %d, Maxval = %d\n", magic_number, width, height, Maxval);
 
-            //int num_bytes = Maxval < 256 ? 1 : 2;
-            //pixel currentPix;
+            rawimage.resize(height, std::vector<pixel>(width));
 
-            unsigned char clr[7];
-
-            std::cout << clr << '\n';
-
-            int read = fread(&clr, 3, 1, f);
-
-            std::cout << read << '\n';
-            
-            std::cout << clr;
-
-            // std::cout << pix[0] << '\n';
-            // std::cout << pix[1] << '\n';
-            // std::cout << pix[2] << '\n';
-
+            int num_bytes = Maxval < 256 ? 1 : 2;
+            unsigned char current_pixel[3];
 
             for(size_t i = 0; i < height; i++){
                 for(size_t j = 0; j < width; j++){
-                    break;
+                    fread(&current_pixel, num_bytes, 3 , f);
+
+                    uint64_t red = current_pixel[0];
+                    red *= 2;
+                    uint64_t blue = current_pixel[1];
+                    blue *= 2;
+                    uint64_t green = current_pixel[2];
+                    green *= 2;
+
+                    rawimage[i][j] = {red, green, blue};
                 }
             }
-
         }
 
 
@@ -64,9 +80,9 @@ class Image{
             PPMToArray("out.ppm");
         }
 
-        void DFT();
+        void FFT();
 
-        void InverseDFT();
+        void InverseFFT();
 
 
 
