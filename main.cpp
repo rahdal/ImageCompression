@@ -5,7 +5,5 @@ int main(){
     Image test = Image();
 
     test.ColorToBW();
-    test.ImageToPPM("out.ppm");
-
 }
 
