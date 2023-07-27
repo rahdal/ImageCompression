@@ -13,7 +13,7 @@ class Image{
     private:
         std::string filename;
         std::vector<std::vector<pixel>> rawimage;
-        std::vector<std::vector<std::vector<int>>> bwimage;
+        std::vector<std::vector<uint16_t>> bwimage;
 
         void ImageToPPM();
 
@@ -22,10 +22,7 @@ class Image{
     public:
         Image();
 
-        void ColorToBW(){
-            PPMToArray("out.ppm");
-            ImageToPPM();
-        }
+        void ColorToBW();
 
         void FFT();
 

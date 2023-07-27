@@ -3,7 +3,6 @@
 
 int main(){
     Image test = Image();
-
     test.ColorToBW();
 }
 
