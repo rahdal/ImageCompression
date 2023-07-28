@@ -63,12 +63,12 @@ void Image::PPMToArray(std::string filename){
 void Image::ColorToBW(){
     PPMToArray("out.ppm");
 
-    bwimage.resize(rawimage.size(), std::vector<uint16_t>(rawimage[0].size()));
+    bwimage.resize(rawimage.size(), std::vector<std::complex<float>>(rawimage[0].size()));
 
     for(size_t i = 0; i < bwimage.size(); i++){
         for(size_t j = 0; j < bwimage[0].size(); j++){
             pixel currpixel = rawimage[i][j];
-            bwimage[i][j] = (uint16_t) (0.216 * currpixel.r + 0.7152 * currpixel.g + 0.0722 * currpixel.b);
+            bwimage[i][j] = (0.216f * currpixel.r + 0.7152f * currpixel.g + 0.0722f * currpixel.b);
         }
     }
 
@@ -85,7 +85,7 @@ void Image::ColorToBW(){
 
     for(size_t i = 0; i < height; i++){
         for(size_t j = 0; j < width; j++){
-            fprintf(f, "%d %s", bwimage[i][j], "  ");
+            fprintf(f, "%d %s", (int) bwimage[i][j].real(), "  ");
         }
         fprintf(f, "\n");
     }
@@ -94,6 +94,51 @@ void Image::ColorToBW(){
 
 }
 
-void Image::FFT(){
+void Image::fft2(){
+    //transform rows first
+    for(size_t row = 0; row < bwimage.size(); row++){
+        bwimage[row] = ditfft(bwimage[row]);
+    }
+
+    //transform columns
     
+}
+
+complex_vec Image::ditfft(complex_vec &slice){
+    size_t num_elements = slice.size();
+
+    if(num_elements == 1){
+        return slice;
+    }
+
+    complex_vec evens;
+    evens.reserve(num_elements/2);
+    complex_vec odds;
+    odds.reserve(num_elements/2);
+
+
+    for(size_t i = 0; i < num_elements; i++){
+        if(i % 2 == 0){
+            evens.push_back(slice[i]);
+        }
+        else{
+            odds.push_back(slice[i]);
+        }
+    }
+
+    complex_vec first_half = ditfft(evens);
+    complex_vec second_half = ditfft(odds);
+    complex_vec result(num_elements, 0);
+
+    for(size_t k = 0; k < num_elements / 2; k++){
+        complex_num twiddle_factor = std::exp(complex_num(0,(-2 * PI *k) / num_elements));
+
+        complex_num p = first_half[k];
+        complex_num q = second_half[k] * twiddle_factor;
+
+        result[k] = p + q;
+        result[k + (num_elements/2)] = p - q;
+    }
+
+    return result;
 }
