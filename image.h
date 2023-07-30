@@ -4,13 +4,9 @@
 #include <iostream>
 #include <complex>
 #include <queue>
+#include <thread>
 
 using namespace std::complex_literals;
-struct pixel{
-    uint16_t r;
-    uint16_t g;
-    uint16_t b;
-};
 
 enum Mode {forward, inverse};
 enum Color {red, green, blue};

@@ -213,7 +213,6 @@ float Image::GetThreshold(Color channel, int ratio){
 }
 
 void Image::ZeroOut(Color channel, float threshold){
-    std::cout << threshold << " ";
     size_t height = rawimage[channel].size();
     size_t width = rawimage[channel][0].size();
 
@@ -228,9 +227,13 @@ void Image::ZeroOut(Color channel, float threshold){
 
 void Image::Compress(int ratio){
     //FFT2 each channel
-    fft2(rawimage[Color::red]);
-    fft2(rawimage[Color::green]);
-    fft2(rawimage[Color::blue]);
+    std::thread fft_one([this]() { fft2(rawimage[Color::red]); });
+    std::thread fft_two([this]() { fft2(rawimage[Color::green]); });
+    std::thread fft_three([this]() { fft2(rawimage[Color::blue]); });
+
+    fft_one.join();
+    fft_two.join();
+    fft_three.join();
 
     //Get thresholds
     float red_threshold = GetThreshold(Color::red,ratio);
@@ -243,8 +246,11 @@ void Image::Compress(int ratio){
     ZeroOut(Color::blue, blue_threshold);
 
     //IFFT2 each channel
-    ifft2(rawimage[Color::red]);
-    ifft2(rawimage[Color::green]);
-    ifft2(rawimage[Color::blue]);
+    std::thread ifft_one([this]() { ifft2(rawimage[Color::red]); });
+    std::thread ifft_two([this]() { ifft2(rawimage[Color::green]); });
+    std::thread ifft_three([this]() { ifft2(rawimage[Color::blue]); });
 
+    ifft_one.join();
+    ifft_two.join();
+    ifft_three.join();
 }

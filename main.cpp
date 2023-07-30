@@ -1,10 +1,8 @@
 #include "image.h"
-#include <iostream>
 
 int main(){
     Image test = Image("out.ppm");
-    test.Compress(10);
+    test.Compress(50);
     test.ImageToPPM();
-
 }
 

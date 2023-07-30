@@ -1,32 +1,3 @@
-## EECS 281 Advanced Makefile
-
-# How to use this Makefile...
-###################
-###################
-##               ##
-##  $ make help  ##
-##               ##
-###################
-###################
-
-# IMPORTANT NOTES:
-#   1. Set EXECUTABLE to the command name from the project specification.
-#   2. To enable automatic creation of unit test rules, your program logic
-#      (where main() is) should be in a file named project*.cpp or
-#      specified in the PROJECTFILE variable.
-#   3. Files you want to include in your final submission cannot match the
-#      test*.cpp pattern.
-
-#######################
-# TODO (begin) #
-#######################
-# Change 'youruniqname' to match your UM uniqname (no quote marks).
-UNIQNAME    = rdalvi
-
-# Change the right hand side of the identifier to match the project identifier
-# given in the project or lab specification.
-IDENTIFIER  = AD48FB4835AF347EB0CA8009E24C3B13F8519882
-
 # Change 'executable' to match the command name given in the project spec.
 EXECUTABLE  = compression
 
@@ -35,15 +6,6 @@ EXECUTABLE  = compression
 PROJECTFILE = $(or $(wildcard project*.cpp $(EXECUTABLE).cpp), main.cpp)
 # If main() is in another file delete line above, edit and uncomment below
 #PROJECTFILE = mymainfile.cpp
-
-# This is the path from the CAEN home folder to where projects will be
-# uploaded. (eg. /home/mmdarden/eecs281/project1)
-# Change this if you prefer a different path.
-# REMOTE_PATH := eecs281_$(EXECUTABLE)_sync  # /home/mmdarden/eecs281_proj0_sync
-REMOTE_PATH := eecs281_$(EXECUTABLE)_sync
-#######################
-# TODO (end) #
-#######################
 
 # enables c++17 on CAEN or 281 autograder
 PATH := /usr/um/gcc-6.2.0/bin:$(PATH)
@@ -70,7 +32,7 @@ SOURCES     := $(filter-out $(TESTSOURCES), $(SOURCES))
 OBJECTS     = $(SOURCES:%.cpp=%.o)
 
 # Default Flags
-CXXFLAGS = -std=c++17 -Wconversion -Wall -Wextra -pedantic
+CXXFLAGS = -std=c++17 -Wconversion -Wall -Wextra -pedantic -pthread
 
 # make debug - will compile sources with $(CXXFLAGS) -g3 and -fsanitize
 #              flags also defines DEBUG and _GLIBCXX_DEBUG
@@ -85,53 +47,8 @@ release: CXXFLAGS += -O3 -DNDEBUG
 release: $(EXECUTABLE)
 .PHONY: release
 
-# make valgrind - will compile sources with $(CXXFLAGS) -g3 suitable for
-#                 CAEN or WSL (DOES NOT WORK ON MACOS).
-valgrind: CXXFLAGS += -g3
-valgrind:
-	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(EXECUTABLE)_valgrind
-.PHONY: valgrind
-
-# make profile - will compile "all" with $(CXXFLAGS) and the -g3 and -O3 flags
-profile: CXXFLAGS += -g3 -O3
-profile:
-	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(EXECUTABLE)_profile
-.PHONY: profile
-
-# make gprof - will compile "all" with $(CXXFLAGS) and the -pg (for gprof)
-gprof: CXXFLAGS += -pg
-gprof:
-	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(EXECUTABLE)_profile
-.PHONY: gprof
-
-# make static - will perform static analysis in the matter currently used
-#               on the autograder
-static:
-	cppcheck --enable=all --suppress=missingIncludeSystem \
-      $(SOURCES) *.h *.hpp
-.PHONY: static
-
-# name of the tarballs created for submission
-FULL_SUBMITFILE = fullsubmit.tar.gz
-PARTIAL_SUBMITFILE = partialsubmit.tar.gz
-UNGRADED_SUBMITFILE = ungraded.tar.gz
-
 # These files are excluded when checking for project identifier (no spaces!)
 NO_IDENTIFIER = xcode_redirect.hpp,getopt.h,getopt.c,xgetopt.h
-
-# make identifier - will check to ensure that all source code and header files
-#                   include the project identifier, skip subdirectories
-#                   also removes old submit tarballs, they are outdated
-identifier: $(foreach tsrc,$(TESTSOURCES),$(eval NO_IDENTIFIER := $(NO_IDENTIFIER),$(tsrc)))
-identifier:
-	@if [ $$(grep --include=*.{h,hpp,c,cpp} --exclude={$(NO_IDENTIFIER)} --directories=skip -L $(IDENTIFIER) * | wc -l) -ne 0 ]; then \
-		printf "Missing project identifier in file(s): "; \
-		echo `grep --include=*.{h,hpp,c,cpp} --exclude={$(NO_IDENTIFIER)} --directories=skip -L $(IDENTIFIER) *`; \
-		exit 1; \
-	else \
-		rm -f $(PARTIAL_SUBMITFILE) $(FULL_SUBMITFILE) $(UNGRADED_SUBMITFILE); \
-	fi
-.PHONY: identifier
 
 # Build all executables
 all: debug release
