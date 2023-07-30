@@ -2,10 +2,9 @@
 #include <iostream>
 
 int main(){
-    Image test = Image();
-    test.ColorToBW();
-    test.fft2();
-    test.ifft2();
-    test.BWToPPM();
+    Image test = Image("out.ppm");
+    test.Compress();
+    test.ImageToPPM();
+
 }
 

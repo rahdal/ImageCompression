@@ -12,6 +12,8 @@ struct pixel{
 };
 
 enum Mode {forward, inverse};
+enum Color {red, green, blue};
+
 
 typedef std::vector<std::complex<float>> ComplexVec;
 typedef std::complex<float> ComplexNum;
@@ -20,10 +22,8 @@ constexpr float PI = 3.141592F;
 class Image{
     private:
         std::string filename;
-        std::vector<std::vector<pixel>> rawimage;
+        std::vector<std::vector<std::vector<ComplexNum>>> rawimage;
         std::vector<ComplexVec> bwimage;
-
-        void ImageToPPM();
 
         void PPMToArray(std::string filename);
 
@@ -33,15 +33,16 @@ class Image{
 
         ComplexVec ifft(ComplexVec &slice);
 
+        ComplexNum GetThreshold(Color channel, int ratio);
+
+        void fft2(std::vector<ComplexVec> &channel);
+
+        void ifft2(std::vector<ComplexVec> &channel);
 
     public:
-        Image();
+        Image(std::string filename);
 
-        void ColorToBW();
+        void Compress();
 
-        void BWToPPM();
-
-        void fft2();
-
-        void ifft2();
+        void ImageToPPM();
 };

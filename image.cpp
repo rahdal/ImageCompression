@@ -1,7 +1,7 @@
 #include "image.h"
 
-Image::Image(){
-    return;
+Image::Image(std::string filename){
+    PPMToArray(filename);
 }
 
 void Image::ImageToPPM(){
@@ -10,15 +10,15 @@ void Image::ImageToPPM(){
 
     fprintf(f, "P3\n");
     
-    size_t width = rawimage[0].size();
-    size_t height = rawimage.size();
+    size_t width = rawimage[0][0].size();
+    size_t height = rawimage[0].size();
 
     fprintf(f,"%s %s %s" ,std::to_string(width).c_str(), std::to_string(height).c_str(), "\n");
     fprintf(f, "255\n");
 
     for(size_t i = 0; i < height; i++){
         for(size_t j = 0; j < width; j++){
-            fprintf(f, "%d %d %d %s", rawimage[i][j].r, rawimage[i][j].g, rawimage[i][j].b, "  ");
+            fprintf(f, "%d %d %d %s", (int) rawimage[Color::red][i][j].real(), (int) rawimage[Color::green][i][j].real(), (int) rawimage[Color::blue][i][j].real(), "  ");
         }
         fprintf(f, "\n");
 
@@ -40,7 +40,8 @@ void Image::PPMToArray(std::string filename){
     char newline;
     fread(&newline, 1, 1, f);
 
-    rawimage.resize(height, std::vector<pixel>(width));
+    rawimage.resize(3,std::vector<ComplexVec>(height,ComplexVec(width)));
+
 
     int num_bytes = Maxval < 256 ? 1 : 2;
     unsigned char current_pixel[3];
@@ -53,70 +54,35 @@ void Image::PPMToArray(std::string filename){
             uint16_t green = current_pixel[1];
             uint16_t blue = current_pixel[2];
 
-            rawimage[i][j] = {red, green, blue};
+            rawimage[Color::red][i][j] = red;
+            rawimage[Color::green][i][j] = green;
+            rawimage[Color::blue][i][j] = blue;
+
         }
     }
 
     printf("%s\n", "PPM file successfully converted to an array.");
 }
 
-void Image::ColorToBW(){
-    PPMToArray("out.ppm");
-
-    bwimage.resize(rawimage.size(), ComplexVec(rawimage[0].size()));
-
-    for(size_t i = 0; i < bwimage.size(); i++){
-        for(size_t j = 0; j < bwimage[0].size(); j++){
-            pixel currpixel = rawimage[i][j];
-            bwimage[i][j] = (0.216f * currpixel.r + 0.7152f * currpixel.g + 0.0722f * currpixel.b);
-        }
-    }
-
-    printf("%s\n", "Image successfully converted to BW.");
-}
-
-void Image::BWToPPM(){
-    FILE *f;
-    f = fopen("writebw.ppm", "w");
-
-    fprintf(f, "P2\n");
-    
-    size_t width = bwimage[0].size();
-    size_t height = bwimage.size();
-
-    fprintf(f,"%s %s %s" ,std::to_string(width).c_str(), std::to_string(height).c_str(), "\n");
-    fprintf(f, "255\n");
-
-    for(size_t i = 0; i < height; i++){
-        for(size_t j = 0; j < width; j++){
-            fprintf(f, "%d %s", (int) bwimage[i][j].real(), "  ");
-        }
-        fprintf(f, "\n");
-    }
-
-    printf("%s\n", "BW Image successfully written as PPM.");
-
-}
-
-void Image::fft2(){
+void Image::fft2(std::vector<ComplexVec> &channel){
     printf("%s\n", "FFT2 Started.");
 
     //transform rows first
-    for(size_t row = 0; row < bwimage.size(); row++){
-        bwimage[row] = fft(bwimage[row]);
+    for(size_t row = 0; row < channel.size(); row++){
+        channel[row] = fft(channel[row]);
     }
 
     //transform columns
     ComplexVec column;
-    column.reserve(bwimage[0].size());
+    column.reserve(channel[0].size());
 
-    for(size_t col = 0; col < bwimage[0].size(); col++){
-        for(size_t row = 0; row < bwimage.size(); row++){
-            column.push_back(bwimage[row][col]);
+    for(size_t col = 0; col < channel[0].size(); col++){
+        for(size_t row = 0; row < channel.size(); row++){
+            column.push_back(channel[row][col]);
         }
         ComplexVec transformed_column = fft(column);
-        for(size_t row = 0; row < bwimage.size(); row++){
-            bwimage[row][col] = transformed_column[row];
+        for(size_t row = 0; row < channel.size(); row++){
+            channel[row][col] = transformed_column[row];
         }
         column.clear();
     }
@@ -124,25 +90,25 @@ void Image::fft2(){
     printf("%s\n", "FFT2 Finished.");
 }
 
-void Image::ifft2(){
+void Image::ifft2(std::vector<ComplexVec> &channel){
     printf("%s\n", "IFFT2 Started.");
 
     //transform rows first
-    for(size_t row = 0; row < bwimage.size(); row++){
-        bwimage[row] = ifft(bwimage[row]);
+    for(size_t row = 0; row < channel.size(); row++){
+        channel[row] = ifft(channel[row]);
     }
 
     //transform columns
     ComplexVec column;
-    column.reserve(bwimage[0].size());
+    column.reserve(channel[0].size());
 
-    for(size_t col = 0; col < bwimage[0].size(); col++){
-        for(size_t row = 0; row < bwimage.size(); row++){
-            column.push_back(bwimage[row][col]);
+    for(size_t col = 0; col < channel[0].size(); col++){
+        for(size_t row = 0; row < channel.size(); row++){
+            column.push_back(channel[row][col]);
         }
         ComplexVec transformed_column = ifft(column);
-        for(size_t row = 0; row < bwimage.size(); row++){
-            bwimage[row][col] = transformed_column[row];
+        for(size_t row = 0; row < channel.size(); row++){
+            channel[row][col] = transformed_column[row];
         }
         column.clear();
     }
@@ -212,3 +178,25 @@ ComplexVec Image::ifft(ComplexVec &slice){
     return result;  
 }
 
+ComplexNum Image::GetThreshold(Color channel, int ratio){
+    size_t height = rawimage[channel].size();
+    size_t width = rawimage[channel][0].size();
+
+    for(size_t row = 0; row < height; row++){
+        for(size_t col = 0; col < width; col++){
+            
+        }
+    }
+}
+
+void Image::Compress(){
+    //FFT2 each channel
+    fft2(rawimage[Color::red]);
+    fft2(rawimage[Color::green]);
+    fft2(rawimage[Color::blue]);
+
+    //IFFT2 each channel
+    ifft2(rawimage[Color::red]);
+    ifft2(rawimage[Color::green]);
+    ifft2(rawimage[Color::blue]);
+}
