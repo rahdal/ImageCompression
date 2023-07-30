@@ -63,7 +63,7 @@ void Image::PPMToArray(std::string filename){
 void Image::ColorToBW(){
     PPMToArray("out.ppm");
 
-    bwimage.resize(rawimage.size(), std::vector<std::complex<float>>(rawimage[0].size()));
+    bwimage.resize(rawimage.size(), ComplexVec(rawimage[0].size()));
 
     for(size_t i = 0; i < bwimage.size(); i++){
         for(size_t j = 0; j < bwimage[0].size(); j++){
@@ -72,6 +72,10 @@ void Image::ColorToBW(){
         }
     }
 
+    printf("%s\n", "Image successfully converted to BW.");
+}
+
+void Image::BWToPPM(){
     FILE *f;
     f = fopen("writebw.ppm", "w");
 
@@ -90,30 +94,73 @@ void Image::ColorToBW(){
         fprintf(f, "\n");
     }
 
-        printf("%s\n", "Image successfully converted to BW.");
+    printf("%s\n", "BW Image successfully written as PPM.");
 
 }
 
 void Image::fft2(){
+    printf("%s\n", "FFT2 Started.");
+
     //transform rows first
     for(size_t row = 0; row < bwimage.size(); row++){
-        bwimage[row] = ditfft(bwimage[row]);
+        bwimage[row] = fft(bwimage[row]);
     }
 
     //transform columns
-    
+    ComplexVec column;
+    column.reserve(bwimage[0].size());
+
+    for(size_t col = 0; col < bwimage[0].size(); col++){
+        for(size_t row = 0; row < bwimage.size(); row++){
+            column.push_back(bwimage[row][col]);
+        }
+        ComplexVec transformed_column = fft(column);
+        for(size_t row = 0; row < bwimage.size(); row++){
+            bwimage[row][col] = transformed_column[row];
+        }
+        column.clear();
+    }
+
+    printf("%s\n", "FFT2 Finished.");
 }
 
-complex_vec Image::ditfft(complex_vec &slice){
+void Image::ifft2(){
+    printf("%s\n", "IFFT2 Started.");
+
+    //transform rows first
+    for(size_t row = 0; row < bwimage.size(); row++){
+        bwimage[row] = ifft(bwimage[row]);
+    }
+
+    //transform columns
+    ComplexVec column;
+    column.reserve(bwimage[0].size());
+
+    for(size_t col = 0; col < bwimage[0].size(); col++){
+        for(size_t row = 0; row < bwimage.size(); row++){
+            column.push_back(bwimage[row][col]);
+        }
+        ComplexVec transformed_column = ifft(column);
+        for(size_t row = 0; row < bwimage.size(); row++){
+            bwimage[row][col] = transformed_column[row];
+        }
+        column.clear();
+    }
+
+    printf("%s\n", "IFFT2 Finished.");
+}
+
+
+ComplexVec Image::ditfft(ComplexVec &slice, Mode mode){
     size_t num_elements = slice.size();
 
     if(num_elements == 1){
         return slice;
     }
 
-    complex_vec evens;
+    ComplexVec evens;
     evens.reserve(num_elements/2);
-    complex_vec odds;
+    ComplexVec odds;
     odds.reserve(num_elements/2);
 
 
@@ -126,19 +173,42 @@ complex_vec Image::ditfft(complex_vec &slice){
         }
     }
 
-    complex_vec first_half = ditfft(evens);
-    complex_vec second_half = ditfft(odds);
-    complex_vec result(num_elements, 0);
+    ComplexVec first_half = ditfft(evens, mode);
+    ComplexVec second_half = ditfft(odds, mode);
+    ComplexVec result(num_elements, 0);
 
     for(size_t k = 0; k < num_elements / 2; k++){
-        complex_num twiddle_factor = std::exp(complex_num(0,(-2 * PI *k) / num_elements));
+        ComplexNum twiddle_factor;
+        if(mode == forward){
+            twiddle_factor = std::exp(ComplexNum(0,(-2 * PI * (float) k) / (float) num_elements));
+        }
+        else{
+            twiddle_factor = std::exp(ComplexNum(0,(2 * PI * (float) k) / (float) (num_elements)));
+        }
+        
+        ComplexNum p = first_half[k];
+        ComplexNum q = second_half[k] * twiddle_factor;
 
-        complex_num p = first_half[k];
-        complex_num q = second_half[k] * twiddle_factor;
-
-        result[k] = p + q;
+        result[k] = (p + q);
         result[k + (num_elements/2)] = p - q;
     }
 
     return result;
 }
+
+ComplexVec Image::fft(ComplexVec &slice){
+    return ditfft(slice, Mode::forward);
+}
+
+ComplexVec Image::ifft(ComplexVec &slice){
+    ComplexVec result = ditfft(slice, Mode::inverse);
+    size_t num_elements = result.size();
+
+    //Apply scale factor
+    for(size_t k = 0; k < num_elements; k++){
+        result[k] /= num_elements;
+    }
+
+    return result;  
+}
+

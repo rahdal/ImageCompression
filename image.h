@@ -11,29 +11,37 @@ struct pixel{
     uint16_t b;
 };
 
-typedef std::vector<std::complex<float>> complex_vec;
-typedef std::complex<float> complex_num;
+enum Mode {forward, inverse};
+
+typedef std::vector<std::complex<float>> ComplexVec;
+typedef std::complex<float> ComplexNum;
 constexpr float PI = 3.141592F;
 
 class Image{
     private:
         std::string filename;
         std::vector<std::vector<pixel>> rawimage;
-        std::vector<std::vector<complex_num>> bwimage;
+        std::vector<ComplexVec> bwimage;
 
         void ImageToPPM();
 
         void PPMToArray(std::string filename);
 
-        complex_vec ditfft(complex_vec &slice);
+        ComplexVec ditfft(ComplexVec &slice, Mode mode);
+
+        ComplexVec fft(ComplexVec &slice);
+
+        ComplexVec ifft(ComplexVec &slice);
+
 
     public:
         Image();
 
         void ColorToBW();
 
+        void BWToPPM();
+
         void fft2();
 
         void ifft2();
-
 };
