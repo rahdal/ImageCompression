@@ -18,7 +18,15 @@ void Image::ImageToPPM(){
 
     for(size_t i = 0; i < height; i++){
         for(size_t j = 0; j < width; j++){
-            fprintf(f, "%d %d %d %s", (int) rawimage[Color::red][i][j].real(), (int) rawimage[Color::green][i][j].real(), (int) rawimage[Color::blue][i][j].real(), "  ");
+            int red = (int) rawimage[Color::red][i][j].real();
+            int green = (int) rawimage[Color::green][i][j].real();
+            int blue = (int) rawimage[Color::blue][i][j].real();
+
+            red = std::max(0, std::min(red, 255));
+            green = std::max(0, std::min(green, 255));
+            blue = std::max(0, std::min(blue, 255));
+
+            fprintf(f, "%d %d %d %s", red, green, blue, "  ");
         }
         fprintf(f, "\n");
 
@@ -178,25 +186,65 @@ ComplexVec Image::ifft(ComplexVec &slice){
     return result;  
 }
 
-ComplexNum Image::GetThreshold(Color channel, int ratio){
+float Image::GetThreshold(Color channel, int ratio){
+    std::priority_queue<float, std::vector<float>, std::greater<float>> kth_largest;
+
+    size_t height = rawimage[channel].size();
+    size_t width = rawimage[channel][0].size();
+
+    size_t num_elements = height * width;
+    size_t cutoff = ((double)ratio / 100) * num_elements;
+
+    for(size_t row = 0; row < height; row++){
+        for(size_t col = 0; col < width; col++){
+            if(kth_largest.size() < cutoff){
+                kth_largest.push(abs(rawimage[channel][row][col]));
+            }
+            else{
+                if(abs(rawimage[channel][row][col]) > kth_largest.top()){
+                    kth_largest.pop();
+                    kth_largest.push(abs(rawimage[channel][row][col]));
+                }
+            }
+        }
+    }
+
+    return kth_largest.top();
+}
+
+void Image::ZeroOut(Color channel, float threshold){
+    std::cout << threshold << " ";
     size_t height = rawimage[channel].size();
     size_t width = rawimage[channel][0].size();
 
     for(size_t row = 0; row < height; row++){
         for(size_t col = 0; col < width; col++){
-            
+            if(abs(rawimage[channel][row][col]) < threshold){
+                rawimage[channel][row][col] = 0;
+            }
         }
     }
 }
 
-void Image::Compress(){
+void Image::Compress(int ratio){
     //FFT2 each channel
     fft2(rawimage[Color::red]);
     fft2(rawimage[Color::green]);
     fft2(rawimage[Color::blue]);
 
+    //Get thresholds
+    float red_threshold = GetThreshold(Color::red,ratio);
+    float green_threshold = GetThreshold(Color::green,ratio);
+    float blue_threshold = GetThreshold(Color::blue,ratio);
+
+    //Zero out channels
+    ZeroOut(Color::red, red_threshold);
+    ZeroOut(Color::green, green_threshold);
+    ZeroOut(Color::blue, blue_threshold);
+
     //IFFT2 each channel
     ifft2(rawimage[Color::red]);
     ifft2(rawimage[Color::green]);
     ifft2(rawimage[Color::blue]);
+
 }

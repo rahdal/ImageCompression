@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <complex>
+#include <queue>
 
 using namespace std::complex_literals;
 struct pixel{
@@ -33,7 +34,9 @@ class Image{
 
         ComplexVec ifft(ComplexVec &slice);
 
-        ComplexNum GetThreshold(Color channel, int ratio);
+        float GetThreshold(Color channel, int ratio);
+
+        void ZeroOut(Color channel, float threshold);
 
         void fft2(std::vector<ComplexVec> &channel);
 
@@ -42,7 +45,7 @@ class Image{
     public:
         Image(std::string filename);
 
-        void Compress();
+        void Compress(int ratio);
 
         void ImageToPPM();
 };

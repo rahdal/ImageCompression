@@ -3,7 +3,7 @@
 
 int main(){
     Image test = Image("out.ppm");
-    test.Compress();
+    test.Compress(10);
     test.ImageToPPM();
 
 }
